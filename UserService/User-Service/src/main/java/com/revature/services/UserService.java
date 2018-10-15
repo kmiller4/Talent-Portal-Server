@@ -5,6 +5,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -16,18 +17,18 @@ import org.springframework.stereotype.Service;
 
 //import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.revature.models.User;
-// import com.revature.models.UserSkills;
 import com.revature.repos.UserRepo;
 
 @Service
 public class UserService {
 	@Autowired
 	private UserRepo ur;
+	
 
 	private static final int ITERATIONS = 10000;
 	private static final int KEY_LENGTH = 256;
 	
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public static byte[] hash(char[] password, byte[] salt) {
 		PBEKeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, KEY_LENGTH);
 		Arrays.fill(password, Character.MIN_VALUE);
@@ -41,15 +42,15 @@ public class UserService {
 		}
 	}
 	
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public static String generateSecurePassword(String password, String salt) {
 		String returnValue = null;
 		byte[] securePassword = hash(password.toCharArray(), salt.getBytes());
 		returnValue = Base64.getEncoder().encodeToString(securePassword);
 		return returnValue;
 	}
-
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+	
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public static boolean verifyUserPassword(String providedPassword, String securedPassword, String salt) {
 		boolean returnValue = false;
 		// Generate New secure password with the same salt
@@ -63,52 +64,58 @@ public class UserService {
 //		return ur.findByUsername(username);
 //	}
 	
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public List<User> findAll() {
 		return ur.findAll();
 	}
 
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public User findByUserId(int userId) {
-		User u = ur.findByUserId(userId);
-		return u;
+		Optional<User> u = ur.findByUserId(userId);
+		return u.get();
 	}
 
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
-	public User findByUserIdAndPass(int userId, String pass) {
-		User u = ur.findByUserId(userId);
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
+	public Optional<User> findByUserIdAndPass(int userId, String pass) {
+		Optional<User> u = ur.findByUserId(userId);
+		boolean verified = false;
+		if (u.isPresent()) {
 		String id = "";
-		id += u.getUserId();
-		if (verifyUserPassword(pass, u.getPass(), id)) {
+		id += u.get().getUserId();
+		if (verifyUserPassword(pass, u.get().getPass(), id)) {
 			return u;
+		} else {
+			u = Optional.empty();
 		}
-		return null;
+		};
+		return u;
+		
 	}
 
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public User findByUserIdAndEmail(int userId, String email) {
 		return ur.findByUserIdAndEmail(userId, email);
 	}
 	
-	// *@HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public User findByAssociateId(int associateId) {
 		return ur.findByAssociateId(associateId);
 	}
 
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public List<User> findByRole(int role) {
 		return ur.findByRole(role);
 	}
 	
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public User createUser(User u) {
 		String id = "";
 		id += u.getUserId();
 		u.setPass(generateSecurePassword(u.getPass(), id));
 		return ur.save(u);
 	}
-	
-	// @HystrixCommand(fallbackMethod = "sendStatusCode")
+
+//	@HystrixCommand(fallbackMethod = "sendStatusCode")
 	public void saveAndFlush(User user) {
 		String id = "";
 		id += user.getUserId();
